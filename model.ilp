@@ -1,0 +1,8 @@
+\ Model _copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ H+1: C108 = -0.169544
+Bounds
+End
