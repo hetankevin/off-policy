@@ -3,6 +3,6 @@
 Minimize
  
 Subject To
- H+1: C108 = -0.169544
+ H+10: C96 = -0.01
 Bounds
 End
