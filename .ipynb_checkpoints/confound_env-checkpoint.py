@@ -452,7 +452,7 @@ def orig_gridworld_ope_tools(horizon = 100, slip = 0.05):
     #    0 : state -= 1 unless state % grid.shape[1] == 0
     #    1 : state += 1 unless state % grid.shape[1] == 7
     #    2 : state -= 8 unless state // grid.shape[0] == 0
-    #    2 : state += 8 unless state // grid.shape[0] == 7
+    #    3 : state += 8 unless state // grid.shape[0] == 7
     
     tx = np.zeros((nActions, nStates, nStates))
     for i in range(nStates-1):
