@@ -27,13 +27,17 @@ class ConfoundMDP(object):
         self.state = xp
         return self.state, r
 
-    def generate_trajectory(self, pi_b, horizon):
+    def generate_trajectory(self, pi_b, horizon, iid=True):
         self.reset()
         traj = []
-        for t in range(horizon):
-            x = self.state
+        if not iid:
             u = np.random.choice(self.n_confound, p=self.u_dist)
             self.u = u
+        for t in range(horizon):
+            x = self.state
+            if iid:
+                u = np.random.choice(self.n_confound, p=self.u_dist)
+                self.u = u
             a = np.random.choice(self.n_actions, p=pi_b[u, x])
             xp, r = self.step(a)
             traj.append([x,a,u,xp,r])
@@ -101,10 +105,10 @@ class ConfoundMDP(object):
         return Q[:,:,0] * self.u_dist[0] + Q[:,:,1] * self.u_dist[1] """
 
 
-def collect_sample(nsamples, mdp, pi_b, horizon):
+def collect_sample(nsamples, mdp, pi_b, horizon, iid=True):
     dataset = []
     for _ in range(nsamples):
-        traj = mdp.generate_trajectory(pi_b, horizon)
+        traj = mdp.generate_trajectory(pi_b, horizon, iid)
         dataset.append(traj)
     dataset = np.array(dataset)
     # x, a, u, x', r

@@ -139,6 +139,33 @@ def confound_pi_V(pi, tx, V, confound_weight):
     return pi_u
 
 #------------------------------------------------------------------------
+# Experimental Environment from Yangyi
+#------------------------------------------------------------------------
+
+def toyH2(pi_param, P_param, r_param):
+    #R a, s, s'
+    R = np.zeros((2,2,2))
+    R[0] = np.array([[r_param, 1-r_param], [r_param, 1-r_param]])
+    R[1] = np.array([[1-r_param, r_param], [1-r_param, r_param]])
+    
+    P = np.zeros((2, 2, 2, 2)) # u, a, s, s'
+    P[0,0] = np.array([[P_param, 1-P_param], [P_param, 1-P_param]])
+    P[0,1] = np.array([[1-P_param, P_param], [1-P_param, P_param]])
+    P[1,0] = np.array([[P_param, 1-P_param], [P_param, 1-P_param]])
+    P[1,1] = np.array([[1-P_param, P_param], [1-P_param, P_param]])
+    
+    pi = np.zeros((2, 2, 2)) #u, s, a
+    pi[0] = np.array([[pi_param, 1-pi_param], [pi_param, 1-pi_param]])
+    pi[1] = np.array([[1-pi_param, pi_param], [1-pi_param, pi_param]])
+    
+    x_dist = np.array([P_param, 1-P_param])
+    u_dist = np.array([0.5, 0.5])
+    gamma = 0.98
+    
+    return pi, P, R, x_dist, u_dist, gamma
+    
+
+#------------------------------------------------------------------------
 # Toy from 227B Final Project
 #------------------------------------------------------------------------
 
@@ -403,11 +430,11 @@ def orig_toy_mc_ope_tools(n_left=10, n_right=10, horizon = 100):
 # ope-tools gridworld
 #------------------------------------------------------------------------
 
-def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite=False):
+def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite=False, small=True):
     if infinite:
-        tx,R,x_dist = infty_gridworld_ope_tools(horizon = horizon, slip = slip)
+        tx,R,x_dist = infty_gridworld_ope_tools(horizon = horizon, slip = slip, small=small)
     else:
-        tx,R,x_dist = orig_gridworld_ope_tools(horizon = horizon, slip = slip)
+        tx,R,x_dist = orig_gridworld_ope_tools(horizon = horizon, slip = slip, small=small)
 
     V = rand_pi_val(tx, R, x_dist, 100)
     P = confound_V(tx, x_dist, V, confound_weight=confound_weight)
@@ -424,27 +451,29 @@ def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite
     pi_u = confound_pi_V(pi, tx, V, 0.2)
     return pi_u, P, R, x_dist, u_dist, gamma
 
-def orig_gridworld_ope_tools(horizon = 100, slip = 0.05):
+def orig_gridworld_ope_tools(horizon = 100, slip = 0.05, small=True):
     h = -0.5
     f = -0.005
 
-    grid = np.array(
+    if small:
+        grid = np.array(
         [[-0.01, -0.01, -0.01, -0.01],
          [-0.01, -0.01, f    , h    ],
          [-0.01, h    , -0.01, h    ],
          [-0.01, h    , f    , +1   ]])
-    gridlen = grid.shape[0]
 
-    # grid = np.array(
-    #     [[-0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
-    #      [-0.01, -0.01, f, -0.01, h, -0.01, -0.01, -0.01],
-    #      [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
-    #      [-0.01, f, -0.01, -0.01, -0.01, h, -0.01, f],
-    #      [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
-    #      [-0.01, h, h, -0.01, f, -0.01, h, -0.01],
-    #      [-0.01, h, -0.01, -0.01, h, -0.01, h, -0.01],
-    #      [-0.01, -0.01, -0.01, h, -0.01, f, -0.01, +1]])
+    else:
+        grid = np.array(
+            [[-0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
+             [-0.01, -0.01, f, -0.01, h, -0.01, -0.01, -0.01],
+             [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
+             [-0.01, f, -0.01, -0.01, -0.01, h, -0.01, f],
+             [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
+             [-0.01, h, h, -0.01, f, -0.01, h, -0.01],
+             [-0.01, h, -0.01, -0.01, h, -0.01, h, -0.01],
+             [-0.01, -0.01, -0.01, h, -0.01, f, -0.01, +1]])
     
+    gridlen = grid.shape[0]
     nStates = np.prod(grid.shape)
     nActions = 4
     
@@ -511,26 +540,29 @@ def orig_gridworld_ope_tools(horizon = 100, slip = 0.05):
     
     return tx, R, x_dist
 
-def infty_gridworld_ope_tools(horizon = 100, slip = 0.05):
+def infty_gridworld_ope_tools(horizon = 100, slip = 0.05, small=True):
     h = -0.5
     f = -0.005
 
-    grid = np.array(
-        [[-0.01, -0.01, -0.01, -0.01],
-         [-0.01, -0.01, f    , h    ],
-         [-0.01, h    , -0.01, h    ],
-         [-0.01, h    , f    , +1   ]])
-    gridlen = grid.shape[0]
+    if small:
+        grid = np.array(
+            [[-0.01, -0.01, -0.01, -0.01],
+             [-0.01, -0.01, f    , h    ],
+             [-0.01, h    , -0.01, h    ],
+             [-0.01, h    , f    , +1   ]])
 
-    # grid = np.array(
-    #     [[-0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
-    #      [-0.01, -0.01, f, -0.01, h, -0.01, -0.01, -0.01],
-    #      [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
-    #      [-0.01, f, -0.01, -0.01, -0.01, h, -0.01, f],
-    #      [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
-    #      [-0.01, h, h, -0.01, f, -0.01, h, -0.01],
-    #      [-0.01, h, -0.01, -0.01, h, -0.01, h, -0.01],
-    #      [-0.01, -0.01, -0.01, h, -0.01, f, -0.01, +1]])
+    else:
+        grid = np.array(
+            [[-0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01, -0.01],
+             [-0.01, -0.01, f, -0.01, h, -0.01, -0.01, -0.01],
+             [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
+             [-0.01, f, -0.01, -0.01, -0.01, h, -0.01, f],
+             [-0.01, -0.01, -0.01, h, -0.01, -0.01, f, -0.01],
+             [-0.01, h, h, -0.01, f, -0.01, h, -0.01],
+             [-0.01, h, -0.01, -0.01, h, -0.01, h, -0.01],
+             [-0.01, -0.01, -0.01, h, -0.01, f, -0.01, +1]])
+    
+    gridlen = grid.shape[0]
     
     nStates = np.prod(grid.shape)
     nActions = 4
