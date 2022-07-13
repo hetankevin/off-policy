@@ -430,11 +430,11 @@ def orig_toy_mc_ope_tools(n_left=10, n_right=10, horizon = 100):
 # ope-tools gridworld
 #------------------------------------------------------------------------
 
-def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite=False, small=True):
+def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite=False, small=True, soft=False):
     if infinite:
         tx,R,x_dist = infty_gridworld_ope_tools(horizon = horizon, slip = slip, small=small)
     else:
-        tx,R,x_dist = orig_gridworld_ope_tools(horizon = horizon, slip = slip, small=small)
+        tx,R,x_dist = orig_gridworld_ope_tools(horizon = horizon, slip = slip, small=small, soft=soft)
 
     V = rand_pi_val(tx, R, x_dist, 100)
     P = confound_V(tx, x_dist, V, confound_weight=confound_weight)
@@ -451,7 +451,7 @@ def gridworld_opetools(horizon = 100, slip = 0.05, confound_weight=0.1, infinite
     pi_u = confound_pi_V(pi, tx, V, 0.2)
     return pi_u, P, R, x_dist, u_dist, gamma
 
-def orig_gridworld_ope_tools(horizon = 100, slip = 0.05, small=True):
+def orig_gridworld_ope_tools(horizon = 100, slip = 0.05, small=True, soft=False):
     h = -0.5
     f = -0.005
 
@@ -534,9 +534,12 @@ def orig_gridworld_ope_tools(horizon = 100, slip = 0.05, small=True):
         R[:, i, :] = grid.flatten()
     R[:, -1, -1] = 0
 
-    x_dist = np.zeros(nStates)
-    init_pos = [0, 1, 2, 3, 4, 8, 12]
-    x_dist[init_pos] = 1/len(init_pos)
+    if not soft:
+        x_dist = np.zeros(nStates)
+        init_pos = [0, 1, 2, 3, 4, 8, 12]
+        x_dist[init_pos] = 1/len(init_pos)
+    else:
+        x_dist = np.ones(nStates)/nStates
     
     return tx, R, x_dist
 
