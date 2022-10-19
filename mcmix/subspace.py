@@ -1,5 +1,6 @@
 import numpy as np
 from numba import jit, njit, prange
+from tqdm import tqdm
 
 ## ALGORITHM: SUBSPACE ESTIMATION
 
@@ -59,7 +60,7 @@ def getEigKs(onehotsa, onehotsp, omegaone, omegatwo, K):
 #helper function to get estimates of h, 
 #  array of empirical next state probabilities given state and action,
 #  for lists of indexes of each partition of \Omega_1 and \Omega_2
-def geths(onehotsa, onehotsp, omgones, omgtwos):
+def geths(onehotsa, onehotsp, omgones, omgtwos, G):
     hs = []
     for g in tqdm(range(G)):
         hs.append([geth(onehotsa[:,omgones[g],:,:], onehotsp[:,omgones[g],:]), 
