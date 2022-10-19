@@ -2,10 +2,14 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_probability as tfp
 from tqdm import tqdm
+import sklearn
+import matplotlib.pyplot as plt
+plt.style.use('matplotlibrc')
 
 ## ALGORITHM: CLUSTERING
 
 ## TEST STATISTIC CALCULATION
+'''
 def computeStat(h1, h2, eigvecsa, device='/CPU:0'):
     with tf.device(device):
         h1t = tf.convert_to_tensor(h1, np.float64)
@@ -20,12 +24,16 @@ def computeStat(h1, h2, eigvecsa, device='/CPU:0'):
                         axis=-1),
                     axis=(2,3)).numpy()
     return statmns
+'''
 
-def computeStatMeanOfMeans(hs, eigvecsa, device='/CPU:0'):
+def computeStat(hs, eigvecsa, device='/CPU:0', proj=True):
     with tf.device(device):
         hst = tf.convert_to_tensor(hs, np.float64)
         eigvecsat = tf.convert_to_tensor(eigvecsa, np.float64)
-        projst = tf.squeeze(hst[..., None,:] @ eigvecsat[None,...])
+        if proj:
+            projst = tf.squeeze(hst[..., None,:] @ eigvecsat[None,...])
+        else:
+            projst = hst
         statmns2 = tf.reduce_max(
                             tf.reduce_sum(
                                 (projst[0,None,...] - projst[0,:,None,...]) * 
@@ -43,7 +51,7 @@ def getClusters(statmns, thresh, K, method='kmeans'):
 def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans'):
     accs = []
     wts = []
-    taus = np.arange(0, 0.01, 0.0005)
+    taus = np.arange(lo, hi, step)
     for tau in tqdm(taus):
         clusterlabs = getClusters(statmns, thresh=tau, K=K, method=method)
         accs.append(max(np.mean(clusterlabs == labels), 
