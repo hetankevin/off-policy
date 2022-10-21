@@ -25,7 +25,9 @@ DailyData/
 .mps
 *p
 .p
-
+*.tsv
+**/*.tsv
+**/lastfm-dataset-1K
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
