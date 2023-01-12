@@ -79,6 +79,8 @@ def getClusters(statmns, thresh, K, method='kmeans'):
                                                          assign_labels='kmeans')
 
 ## DIAGNOSTICS
+# Plot the accuracies against the predicted labels for various values of thresholds 
+# Range thresholds between lo and hi with step 'step'
 def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans'):
     accs = []
     wts = []
@@ -93,5 +95,27 @@ def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans'):
     plt.plot(taus, 100*np.array(wts), label='Max. Cluster Weight (%)')
     plt.xlabel('Threshold')
     plt.title('Accuracy against thresholds')
+    plt.legend()
+    
+## GROUND TRUTH AGNOSTIC DIAGNOSTICS
+# Plots the L1 distance between the predicted label distributions for consecutive values of 
+# Range thresholds between lo and hi with step 'step'
+def clusterDiagnosticsHiddenTruth(statmns, K, lo, hi, step, method='kmeans'):
+    clusterlablist = []
+    l1s = []
+    wts = []
+    taus = np.arange(lo, hi, step)
+    clusterlablist.append(getClusters(statmns, thresh=taus[0], K=K, method=method))
+    for tau in tqdm(taus):
+        clusterlabs = getClusters(statmns, thresh=tau, K=K, method=method)
+        l1s.append(min(np.mean(clusterlabs == clusterlablist[-1]), 
+                        np.mean(clusterlabs != clusterlablist[-1])))
+        wts.append(max(np.mean(clusterlabs==1), np.mean(clusterlabs==0)))
+        clusterlablist.append(clusterlabs)
+    plt.figure(figsize=(16,9))
+    plt.plot(taus, 100*np.array(l1s), label='L1 distances (%)')
+    plt.plot(taus, 100*np.array(wts), label='Max. Cluster Weight (%)')
+    plt.xlabel('Threshold')
+    plt.title('L1 distance against thresholds')
     plt.legend()
     
