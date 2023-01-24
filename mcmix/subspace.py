@@ -1,6 +1,7 @@
 import numpy as np
 from numba import jit, njit, prange
 from tqdm import tqdm
+import tensorflow as tf
 
 ## ALGORITHM: SUBSPACE ESTIMATION
 
@@ -31,22 +32,46 @@ def geth(onehotsa, onehotsp, simple=False):
     return h
 
 #function to get projections of next state probabilities to rank K subspaces
-def getEig(onehotsa, onehotsp, omegaone, omegatwo, K, wt = True):
-    h1 = geth(onehotsa[:,omegaone,:,:], onehotsp[:,omegaone,:])
-    h2 = geth(onehotsa[:,omegatwo,:,:], onehotsp[:,omegatwo,:])
+def getEig(onehotsa, onehotsp, omegaone, omegatwo, K, wt = True, smalldata=True, device='/CPU:0'):
+    #h1 and h2 are shaped (m,s,a,s')
+    h1 = np.array(geth(onehotsa[:,omegaone,:,:], onehotsp[:,omegaone,:]), dtype=np.float32)
+    h2 = np.array(geth(onehotsa[:,omegatwo,:,:], onehotsp[:,omegatwo,:]), dtype=np.float32)
+    
     #Hsa = (h1 * h2).sum(3).mean(0)
     #Hsa = h1[:,:,:,:,None] * h2[:,:,:,None,:]
     #Hsa = np.einsum('ijkl,ijkm->ijklm', h1, h2).mean(0) #somehow einsum is faster? but equivalent
     
+    nStates = h1.shape[1]
+    nActions = h1.shape[2]
+    
     if not wt:
-        Hsa = (h1[...,None] @ h2[...,None,:]).mean(0)
+        invwts = np.ones((nStates, nActions))
     else:
+        #trajwts is shaped (s,a)
         trajwts = (onehotsa[:,omegaone,:,:].sum(axis=1) * onehotsa[:,omegatwo,:,:].sum(axis=1)).sum(0)
         invwts = 1/trajwts
         (invwts)[np.isinf(invwts)] = 0
+    if smalldata:
         Hsa = ((h1[...,None] @ h2[...,None,:])*invwts[None,:,:,None,None]).sum(0)
-    Hht = Hsa + Hsa.transpose(0,1,3,2)
-    eigvalsa, eigvecsa = np.linalg.eigh(Hht)
+    else:
+        with tf.device(device):
+            Hsa = tf.zeros((nStates, nActions, nStates, nStates), dtype=tf.float32)
+            #Hsa = [[tf.zeros((nStates, nStates), dtype=tf.float32) for a in range(nActions)] for s in range(nStates)]
+            for m in tqdm(range(len(h1))):
+                Hsa += (tf.convert_to_tensor(h1[m,:,:,:,None], np.float32) 
+                        @ tf.convert_to_tensor(h2[m,:,:,None,:], np.float32))*invwts[:,:,None,None]
+                #for s in range(nStates):
+                #    for a in range(nActions):
+                #        Hsa[s][a] += (tf.convert_to_tensor(h1[m,s,a,:,None], np.float32) 
+                #                     @ tf.convert_to_tensor(h2[m,s,a,None,:], np.float32))*invwts[s,a]
+            
+            Hsa = Hsa.numpy()/len(h1)
+            #for s in range(nStates):
+            #    for a in range(nActions):
+            #        Hsa[s][a] = Hsa[s][a].numpy()/len(h1)
+    Hsa = np.array(Hsa)
+    Hsa = Hsa + Hsa.transpose(0,1,3,2)
+    eigvalsa, eigvecsa = np.linalg.eigh(Hsa)
     return eigvalsa[:,:,-K:], eigvecsa[:,:,:,-K:]
 
 #function to get projections of occupancy measures to rank K subspaces

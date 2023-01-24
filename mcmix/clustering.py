@@ -50,25 +50,25 @@ def computeStat(hs, eigvecsa, numpy=True, smalldata=True, device='/CPU:0', proj=
         return statmns
     else:
         with tf.device(device):
-            hst = tf.convert_to_tensor(hs, np.float64)
-            eigvecsat = tf.convert_to_tensor(eigvecsa, np.float64)
+            hs = tf.convert_to_tensor(hs, np.float32)
+            eigvecsa = tf.convert_to_tensor(eigvecsa, np.float32)
             if proj:
-                projst = tf.squeeze(hst[..., None,:] @ eigvecsat[None,...])
+                projs = tf.squeeze(hs[..., None,:] @ eigvecsa[None,...])
             else:
-                projst = hst
+                projs = hs
             if smalldata:
                 statmns = tf.reduce_max(
                                     tf.reduce_sum(
-                                        (projst[0,None,...] - projst[0,:,None,...]) * 
-                                        (projst[1,None,...] - projst[1,:,None,...]), 
+                                        (projs[0,None,...] - projs[0,:,None,...]) * 
+                                        (projs[1,None,...] - projs[1,:,None,...]), 
                                     axis=-1), 
                             axis=(2,3)).numpy()
             else:
-                statmns = tf.zeros((projst.shape[1], projst.shape[1]), dtype=tf.double)
-                for s in tqdm(range(projst.shape[2])):
-                    for a in range(projst.shape[3]):
-                        newstats = tf.reduce_sum((projst[0, None, :, s, a, :] - projst[0, :, None, s, a, :]) * 
-                                    (projst[1, None, :, s, a, :] - projst[1, :, None, s, a, :]), -1)
+                statmns = tf.zeros((projs.shape[1], projs.shape[1]), dtype=tf.float32)
+                for s in tqdm(range(projs.shape[2])):
+                    for a in range(projs.shape[3]):
+                        newstats = tf.reduce_sum((projs[0, None, :, s, a, :] - projs[0, :, None, s, a, :]) * 
+                                    (projs[1, None, :, s, a, :] - projs[1, :, None, s, a, :]), -1)
                         statmns = tf.math.maximum(statmns, newstats)
                 statmns = statmns.numpy()
         return statmns
@@ -79,7 +79,7 @@ def getClusters(statmns, thresh, K, method='kmeans'):
                                                          assign_labels='kmeans')
 
 ## DIAGNOSTICS
-def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans'):
+def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans', figsize=(16,9)):
     accs = []
     wts = []
     taus = np.arange(lo, hi, step)
@@ -88,10 +88,11 @@ def clusterDiagnostics(statmns, K, labels, lo, hi, step, method='kmeans'):
         accs.append(max(np.mean(clusterlabs == labels), 
                         np.mean(clusterlabs != labels)))
         wts.append(max(np.mean(clusterlabs==1), np.mean(clusterlabs==0)))
-    plt.figure(figsize=(16,9))
+    plt.figure(figsize=figsize)
     plt.plot(taus, 100*np.array(accs), label='Accuracies (%)')
     plt.plot(taus, 100*np.array(wts), label='Max. Cluster Weight (%)')
     plt.xlabel('Threshold')
-    plt.title('Accuracy against thresholds')
+    plt.ylabel('Clustering Accuracy')
+    plt.title('Accuracy Against Thresholds')
     plt.legend()
     

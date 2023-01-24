@@ -6,7 +6,6 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 import helpers
 
-
 # Gets starting state probabilities per confounder
 def getStartWeights(states, predlabs, K, nStates, hard=True):
     wts = np.zeros((K, nStates))
@@ -17,8 +16,13 @@ def getStartWeights(states, predlabs, K, nStates, hard=True):
     else:
         for i in range(len(states)):
             for k in range(K):
-                wts[k,states[i, 0]] += predlabs[k, i]
-        return wts/np.sum(wts, axis=1)[:,None]
+                if np.isnan(predlabs[k, i]):
+                    wts[k,states[i, 0]] += 1/wts.shape[1]
+                else:
+                    wts[k,states[i, 0]] += predlabs[k, i]
+                #wts[k,states[i, 0]] += predlabs[k, i]
+        #print(wts)
+        return wts/np.nansum(wts, axis=1)[:,None]
 
 @njit(parallel=False, cache=True)
 def getPolicyHelperSoft(states, actions, K, nStates, nActions, predprobs):
@@ -159,8 +163,8 @@ def em(expect, modelestim, states, actions, nextstates, labels,
                                     + np.log(policy[:, states, actions]), axis=-1) 
                            + np.log(startweights[:,states[:,0]]))
             expectprobs += np.random.uniform(high=1e-7, size=expectprobs.shape)
-            expect = np.exp(expectprobs + 
-                            reg*np.log(prior)[:,None])
+            expectprobs += reg*np.log(prior)[:,None]
+            expect = np.exp(expectprobs - np.max(expectprobs))# + np.random.uniform(high=1e-7, size =expect.shape)
             expect = (expect / np.nansum(np.abs(expect), axis=0))
             prior = np.bincount(expect.argmax(0))/len(expect) #fix to soft prior
         
