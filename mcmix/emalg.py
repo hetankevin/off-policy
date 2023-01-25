@@ -6,7 +6,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 import copy
 import helpers
 
-# Gets starting state probabilities per confounder
+# Gets starting state probabilities per mixture component
 def getStartWeights(states, predlabs, K, nStates, hard=True):
     wts = np.zeros((K, nStates))
     if hard:
