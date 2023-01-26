@@ -1,3 +1,5 @@
+#Code from David Bruns-Smith, Model-Free and Model-Based Policy Evaluation when Causality is Uncertain
+
 import numpy as np
 
 class ConfoundMDP(object):

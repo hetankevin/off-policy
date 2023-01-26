@@ -1,3 +1,12 @@
+
+
+"""Performing loss minimization and computing lower bound on
+an evaluation policy with an unobserved confounding
+
+Off-policy Policy Evaluation Under Unobserved Confounding
+Ramtin keramati, Steve Yadlowsky, Hongseok Namkoong, Emma Brunskill
+"""
+
 """This file containts the data generation process 
 of confounded MDP. For more details of the confounded
 MDP please look at Appendix B of the paper. 

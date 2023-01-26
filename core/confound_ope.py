@@ -1,3 +1,5 @@
+#Code from David Bruns-Smith, Model-Free and Model-Based Policy Evaluation when Causality is Uncertain
+
 import confound_mdp
 import numpy as np
 from tqdm import tqdm

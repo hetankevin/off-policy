@@ -1,3 +1,5 @@
+#Code from David Bruns-Smith, Model-Free and Model-Based Policy Evaluation when Causality is Uncertain
+
 """This file containts conf_wis class that is used to
 estimate weighted importance sampling of confounded MDP
 """
