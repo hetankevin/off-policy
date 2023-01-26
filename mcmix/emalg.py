@@ -115,6 +115,7 @@ def getloglik(expect, modelestim, states, actions, nextstates, hard=True):
                                         * expect[...,None], axis=0)),
                     axis=-1))
 
+#Classification of new trajectories with the hard and soft E-step
 def classify(model, states, actions, nextstates, policy=None, reg=0, prior=None, startweights=None, labs=True):
     if policy is not None:
         probs = np.nansum(np.log(model[:, states, actions, nextstates])
@@ -131,6 +132,49 @@ def classify(model, states, actions, nextstates, policy=None, reg=0, prior=None,
         return probs.argmax(0)
     else:
         return probs
+    
+#Classification of new trajectories with Algorithm 3
+#Not the E-step, here we classify by minimum projected distance
+#    to the K models estimated per mixture element
+#This seems to have better single-step theoretical guarantees
+#    than one E-step but in practice it seems the E-step does better
+#Recommend you use classify() instead
+######INPUTS######
+#dataclust: dataset of s, a, k, r, s' on clustering partition
+#clusterlabs: cluster labels of len(dataclust)
+#hsubs: \hat{P}_{n,i}(\cdot|s,a), estimated models per trajectory in subspace partition
+#Phat_ksa: model estimated from clustering dataset post-clustering
+##################
+def classifyProj(dataclust, clusterlabs, hsubs, Phat_ksa, K, nStates, nActions):
+    #estimating frequency of k,s,a given s,a
+    freq_ksa = (np.array([
+                        helpers.getN_sa(dataclust[clusterlabs==k],
+                              nStates,nActions,reshape=True) 
+                          for k in range(K)])
+                /helpers.getN_sa(dataclust,nStates,nActions,
+                         reshape=True)[None,...])
+    
+    #forming matrix to eigendecompose
+    Mclust_sa = (freq_ksa[...,None,None] * 
+                 (Phat_ksa[...,None] @ Phat_ksa[...,None,:])).sum(0)
+    Mclust_sa = Mclust_sa + Mclust_sa.transpose(0,1,3,2)
+    
+    #eigendecomposition, get top K eigenvectors
+    eigvalclustsa, eigvecclustsa = np.linalg.eigh(Mclust_sa)
+    eigvalclust = eigvalclustsa[:,:,-K:]
+    eigvecclust = eigvecclustsa[:,:,:,-K:]
+    
+    #projection of each model to eigenspaces
+    projmod = (Phat_ksa[...,None,:] @ eigvecclust[None,...]).squeeze() #k, s, a, embed
+    #projection of each trajectory-wise-estimated-model to eigenspaces
+    projsub = (hsubs[..., None,:] @ eigvecclust[None,...]).squeeze() #i, n, s, a, embed
+    
+    #inner product for 'distances', max over s,a pairs, take argmax over mixture elements
+    projclass = (((projsub[0,None,...] - projmod[:,None,...]) * 
+                        (projsub[1,None,...] - projmod[:,None,...])).sum(-1))
+    projclass += np.random.uniform(high=1e-9, size=projclass.shape)
+    projclass = projclass.max((2,3)).argmax(0)
+    return projclass
     
 def em(expect, modelestim, states, actions, nextstates, labels, 
                 K, nStates, nActions, prior, 
