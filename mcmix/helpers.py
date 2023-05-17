@@ -15,8 +15,9 @@ def collect_sample(nsamples, mdp, pi_b, horizon, seed, iid=True):
     # x, a, u, x', r
     return dataset
 
-def getSamplesMultiProc(samples, mdp, pi_b, horizon, start_seed=0, iid=True):
-    nprocs = multiprocessing.cpu_count()
+def getSamplesMultiProc(samples, mdp, pi_b, horizon, start_seed=0, iid=True, nprocs=None):
+    if nprocs is None:
+        nprocs = multiprocessing.cpu_count()
     with ProcessPoolExecutor(max_workers=nprocs, mp_context=multiprocessing.get_context('fork')) as executor:
         future = executor.map(collect_sample, [int(samples/nprocs) for i in range(nprocs)], repeat(copy.deepcopy(mdp)), 
                               repeat(copy.deepcopy(pi_b)), repeat(horizon), [i+start_seed for i in range(nprocs)], repeat(iid))
@@ -39,6 +40,7 @@ def getPb_spsa(nStates, nActions, u_dist, pi_b, pi_bsa, P):
                 for u in range(len(u_dist)):
                     prob[sp, s, a] += u_dist[u] * pi_b[u, s, a] * (1/pi_bsa[s,a]) * P[u, a, s, sp]
     return prob
+
 
 # Gets counts of occupancies of state-action tuples in dataset
 #    optional parameter burnin if one wants to only take counts past mixing time

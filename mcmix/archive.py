@@ -1,6 +1,45 @@
 
 # NUMBA STAT CALCULATION
 '''
+def truncateP(P, nStates, nActions):
+    truncP = np.zeros((P.shape[0], nActions, nStates, nStates)) #U, A, S, Sp
+    for k in range(P.shape[0]):
+        for a in tqdm(range(P.shape[1])):
+            for s in range(P.shape[2]):
+                for sp in range(P.shape[3]):
+                    truncP[k, a, idx_to_trunc(s, hideGlucose=hideGlucose), 
+                           idx_to_trunc(sp, hideGlucose=hideGlucose)] += P[k, a, s, sp]
+    truncP = np.nan_to_num(truncP, 1/nStates)
+    truncP /= np.nansum(truncP, -1)[...,None]
+    return truncP
+
+
+def truncate_x(x_dist, nStates, nActions):
+    x = np.zeros(nStates)
+    for s in range(x_dist.shape[0]):
+        x[idx_to_trunc(s, hideGlucose=hideGlucose)] += x_dist[s]
+    x /= np.nansum(x)
+    return x
+
+
+def truncateR(R_sa, nStates, nActions):
+    truncR_sa = np.zeros((nStates, nActions))
+    counts = np.zeros(nStates)
+    for s in range(R_sa.shape[0]):
+        for a in range(R_sa.shape[1]):
+            truncR_sa[idx_to_trunc(s, hideGlucose=hideGlucose), a] += R_sa[s,a]
+            counts[idx_to_trunc(s, hideGlucose=hideGlucose)] += 1
+    truncR_sa /= counts[...,None]
+    return truncR_sa
+
+def truncate_pi(pi, nStates, nActions):
+    trunc_pi = np.zeros((pi.shape[0], nStates, nActions))
+    for u in range(pi.shape[0]):
+        for s in range(pi.shape[1]):
+            for a in range(pi.shape[2]):
+                trunc_pi[u, idx_to_trunc(s, hideGlucose=hideGlucose), a] += pi_b[u,s,a]
+    trunc_pi /= np.nansum(trunc_pi, -1)[...,None]
+    return trunc_pi
 
 @njit(parallel=True, fastmath=True)
 def getSims(onehotsaclust, hs, Vsa):
