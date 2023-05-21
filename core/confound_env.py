@@ -141,7 +141,7 @@ def confound_pi_V(pi, tx, V, confound_weight):
     return pi_u
 
 #------------------------------------------------------------------------
-# Experimental Environment from Yangyi
+# Experimental Environment
 #------------------------------------------------------------------------
 
 def toyH2(pi_param, P_param, r_param):
