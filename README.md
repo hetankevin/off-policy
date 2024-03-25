@@ -1,6 +1,8 @@
 # Source Code for Offline Policy Evaluation and Optimization under Confounding
 
-This folder contains the source code for the AISTATS 2024 paper "Offline Policy Evaluation and Optimization under Confounding".
+This folder contains the source code for our AISTATS 2024 paper "Offline Policy Evaluation and Optimization under Confounding", 
+which you can find at https://arxiv.org/abs/2211.16583.
+
 The folder is structured as follows:
 * `core/` contains utilities, helper classes and functions generously provided by David Bruns-Smith as part of the source code for his paper "Model-Free and Model-Based Policy Evaluation when Causality is Uncertain".
 * `mcmix/` contains the source code for the global confounders portion of our paper. 
